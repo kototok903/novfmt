@@ -5,7 +5,7 @@
 ### Build
 
 ```sh
-cd /Users/stas/Desktop/novfmt
+cd /path/to/novfmt
 go build ./cmd/novfmt
 ```
 
