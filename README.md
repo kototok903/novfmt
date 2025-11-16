@@ -47,7 +47,7 @@ novfmt edit-meta \
   book.epub
 ```
 
-Useful edit flags:
+Common edit flags:
 - `-title`, `-lang`, `-identifier`, `-description`, repeatable `-creator`
 - `-meta-json`: apply a JSON patch (`{"title":"...", "creators":["..."]}`)
 - `-dump-meta`: write the current metadata snapshot to JSON
@@ -68,7 +68,7 @@ novfmt rewrite \
   book.epub
 ```
 
-Flags:
+Common rewrite flags:
 - `-find`, `-replace`: basic search/replace on text content
 - `-regex`: treat `-find` as a regular expression
 - `-scope body|meta|all`: limit rewrites to XHTML body, metadata, or both
