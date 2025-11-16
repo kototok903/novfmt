@@ -15,8 +15,9 @@ go build ./cmd/novfmt
 novfmt merge \
   -out omnibus.epub \
   -title "My Favorite Saga" \
+  -list volumes.txt \
   -creator "Primary Author" \
-  volume01.epub volume02.epub volume03.epub
+  volume01.epub volume02.epub
 ```
 
 Flags:
@@ -24,6 +25,7 @@ Flags:
 - `-title` / `-t`: Override combined title (defaults to first volume metadata)
 - `-lang`: Force resulting language code
 - `-creator` / `-c`: Repeatable override for creator credits
+- `-list`: Append newline-separated entries from one or more files (blank lines and lines starting with `#` are ignored)
 
 The tool extracts each volume into a temporary workspace, rewrites the manifest/spine with stable IDs, copies assets under `OEBPS/Volumes/vXXXX`, generates a fresh navigation document, and zips everything back into a valid EPUB (storing the mimetype uncompressed as required by the spec).
 

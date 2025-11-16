@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
@@ -56,11 +57,23 @@ func runMerge(ctx context.Context, args []string) error {
 	fs.Var(&creatorVals, "creator", "repeatable author credit")
 	fs.Var(&creatorVals, "c", "alias for -creator")
 
+	var listFiles multiValue
+	fs.Var(&listFiles, "list", "text file containing newline-separated volume paths (repeatable)")
+
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 
 	files := fs.Args()
+
+	if len(listFiles) > 0 {
+		fromLists, err := expandListFiles(listFiles)
+		if err != nil {
+			return err
+		}
+		files = append(files, fromLists...)
+	}
+
 	if len(files) < 2 {
 		return fmt.Errorf("need at least two EPUB files to merge")
 	}
@@ -86,6 +99,7 @@ Options:
   -t, -title      Override merged title
   -lang           Override merged language (default first volume)
   -c, -creator    Repeatable author credit override
+  -list           Text file listing volumes; can repeat
 `)
 }
 
@@ -98,4 +112,28 @@ func (m *multiValue) String() string {
 func (m *multiValue) Set(value string) error {
 	*m = append(*m, value)
 	return nil
+}
+
+func expandListFiles(paths []string) ([]string, error) {
+	var volumes []string
+	for _, p := range paths {
+		f, err := os.Open(p)
+		if err != nil {
+			return nil, fmt.Errorf("list %s: %w", p, err)
+		}
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			volumes = append(volumes, line)
+		}
+		if err := scanner.Err(); err != nil {
+			f.Close()
+			return nil, fmt.Errorf("list %s: %w", p, err)
+		}
+		f.Close()
+	}
+	return volumes, nil
 }
