@@ -23,12 +23,13 @@ type PackageDocument struct {
 }
 
 type Metadata struct {
-	XMLName     xml.Name   `xml:"metadata"`
-	Titles      []DCMeta   `xml:"http://purl.org/dc/elements/1.1/ title"`
-	Creators    []DCMeta   `xml:"http://purl.org/dc/elements/1.1/ creator"`
-	Languages   []DCMeta   `xml:"http://purl.org/dc/elements/1.1/ language"`
-	Identifiers []DCMeta   `xml:"http://purl.org/dc/elements/1.1/ identifier"`
-	Meta        []MetaNode `xml:"meta"`
+	XMLName      xml.Name   `xml:"metadata"`
+	Titles       []DCMeta   `xml:"http://purl.org/dc/elements/1.1/ title"`
+	Creators     []DCMeta   `xml:"http://purl.org/dc/elements/1.1/ creator"`
+	Languages    []DCMeta   `xml:"http://purl.org/dc/elements/1.1/ language"`
+	Identifiers  []DCMeta   `xml:"http://purl.org/dc/elements/1.1/ identifier"`
+	Descriptions []DCMeta   `xml:"http://purl.org/dc/elements/1.1/ description"`
+	Meta         []MetaNode `xml:"meta"`
 }
 
 type DCMeta struct {

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -30,6 +31,8 @@ func main() {
 	switch os.Args[1] {
 	case "merge":
 		err = runMerge(ctx, os.Args[2:])
+	case "edit-meta":
+		err = runEditMeta(ctx, os.Args[2:])
 	case "help", "-h", "--help":
 		printUsage()
 		return
@@ -108,6 +111,7 @@ func printUsage() {
 
 Usage:
   novfmt merge [options] <volume1.epub> <volume2.epub> [...]
+  novfmt edit-meta [options] <book.epub>
 
 Options:
   -o, -out        Output EPUB path (default merged.epub)
@@ -224,4 +228,83 @@ func extractVolumeNumber(name string) (int, bool) {
 		return 0, false
 	}
 	return num, true
+}
+
+func runEditMeta(ctx context.Context, args []string) error {
+	fs := flag.NewFlagSet("edit-meta", flag.ContinueOnError)
+	fs.SetOutput(os.Stderr)
+
+	out := fs.String("out", "", "output EPUB path (defaults to input for in-place edits)")
+	title := fs.String("title", "", "set primary title")
+	lang := fs.String("lang", "", "set language code")
+	identifier := fs.String("identifier", "", "set primary identifier value")
+	description := fs.String("description", "", "set description text")
+
+	var creators multiValue
+	fs.Var(&creators, "creator", "repeatable creator credit (overrides existing list)")
+
+	metaJSONPath := fs.String("meta-json", "", "apply metadata patch from JSON file")
+	dumpMeta := fs.String("dump-meta", "", "write current metadata snapshot (JSON) to file")
+	dumpNav := fs.String("dump-nav", "", "write current nav document to file")
+	navReplace := fs.String("nav", "", "replace nav document with this file")
+	noTouch := fs.Bool("no-touch-modified", false, "do not update dcterms:modified")
+
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	if fs.NArg() != 1 {
+		return fmt.Errorf("edit-meta requires exactly one EPUB path")
+	}
+
+	input := fs.Arg(0)
+
+	var patch epub.MetadataPatch
+	if *metaJSONPath != "" {
+		data, err := os.ReadFile(*metaJSONPath)
+		if err != nil {
+			return fmt.Errorf("read meta-json: %w", err)
+		}
+		if err := json.Unmarshal(data, &patch); err != nil {
+			return fmt.Errorf("parse meta-json: %w", err)
+		}
+	}
+
+	setFlags := map[string]bool{}
+	fs.Visit(func(f *flag.Flag) {
+		setFlags[f.Name] = true
+	})
+
+	if setFlags["title"] {
+		patch.Title = stringPtr(*title)
+	}
+	if setFlags["lang"] {
+		patch.Language = stringPtr(*lang)
+	}
+	if setFlags["identifier"] {
+		patch.Identifier = stringPtr(*identifier)
+	}
+	if setFlags["description"] {
+		patch.Description = stringPtr(*description)
+	}
+	if len(creators) > 0 {
+		list := make([]string, len(creators))
+		copy(list, creators)
+		patch.Creators = &list
+	}
+
+	opts := epub.EditOptions{
+		OutPath:        *out,
+		NavReplacePath: *navReplace,
+		DumpNavPath:    *dumpNav,
+		DumpMetaPath:   *dumpMeta,
+		MetadataPatch:  patch,
+		TouchModified:  !*noTouch,
+	}
+
+	return epub.EditEPUB(ctx, input, opts)
+}
+
+func stringPtr(s string) *string {
+	return &s
 }
