@@ -113,13 +113,22 @@ Usage:
   novfmt merge [options] <volume1.epub> <volume2.epub> [...]
   novfmt edit-meta [options] <book.epub>
 
-Options:
+Merge flags:
   -o, -out        Output EPUB path (default merged.epub)
   -t, -title      Override merged title
   -lang           Override merged language (default first volume)
   -c, -creator    Repeatable author credit override
   -list           Text file listing volumes; can repeat
   -dir            Directory to scan for EPUB files; can repeat
+
+Edit-meta flags:
+  -title, -lang, -identifier, -description   Override core metadata fields
+  -creator                                   Repeatable creator override
+  -meta-json <file>                          Apply JSON metadata patch
+  -dump-meta <file>                          Write current metadata snapshot
+  -nav <xhtml>                               Replace nav (XHTML) document (use -dump-nav to export)
+  -out <file>                                Write edits to a new EPUB
+  -no-touch-modified                         Skip touching dcterms:modified
 `)
 }
 
