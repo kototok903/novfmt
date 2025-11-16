@@ -61,14 +61,14 @@ The command can also operate in “dump only” mode if you just want the nav or
 
 ```sh
 novfmt rewrite \
-  -find "Rudeus" \
-  -replace "Рудеус" \
+  -find "Old name" \
+  -replace "New name" \
   -scope body \
   -selector "p.chapter-title" \
   book.epub
 ```
 
-Common rewrite flags:
+Flags:
 - `-find`, `-replace`: basic search/replace on text content
 - `-regex`: treat `-find` as a regular expression
 - `-scope body|meta|all`: limit rewrites to XHTML body, metadata, or both
