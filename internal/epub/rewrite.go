@@ -22,11 +22,11 @@ const (
 )
 
 type RewriteRule struct {
-	Find          string   `json:"find"`
-	Replace       string   `json:"replace"`
-	Regex         bool     `json:"regex,omitempty"`
-	CaseSensitive bool     `json:"case_sensitive,omitempty"`
-	Selectors     []string `json:"selectors,omitempty"`
+	Find       string   `json:"find"`
+	Replace    string   `json:"replace"`
+	Regex      bool     `json:"regex,omitempty"`
+	IgnoreCase bool     `json:"ignore_case,omitempty"`
+	Selectors  []string `json:"selectors,omitempty"`
 }
 
 type RewriteOptions struct {
@@ -162,7 +162,7 @@ func compileRules(rules []RewriteRule) ([]compiledRule, error) {
 
 		if r.Regex {
 			pat := r.Find
-			if !r.CaseSensitive && !strings.HasPrefix(pat, "(?i)") {
+			if r.IgnoreCase && !strings.HasPrefix(pat, "(?i)") {
 				pat = "(?i)" + pat
 			}
 			re, err := regexp.Compile(pat)
@@ -424,7 +424,7 @@ func applyRuleToText(s string, rule compiledRule) (string, int) {
 		out := rule.re.ReplaceAllString(s, rule.raw.Replace)
 		return out, matches
 	}
-	if rule.raw.CaseSensitive {
+	if !rule.raw.IgnoreCase {
 		count := strings.Count(s, rule.raw.Find)
 		if count == 0 {
 			return s, 0

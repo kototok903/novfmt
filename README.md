@@ -61,7 +61,7 @@ Apply both changes and write to a new file:
 
 ```sh
 novfmt edit-meta \
-  -meta-json meta.json \
+  -meta meta.json \
   -nav nav.xhtml \
   -out saga-fixed.epub \
   saga.epub

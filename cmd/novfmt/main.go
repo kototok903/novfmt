@@ -89,15 +89,15 @@ const usageEditMeta = `Edit-meta:
   -identifier <str>     set primary identifier (e.g. ISBN, UUID)
   -description <str>    set description text
   -creator <name>       author credit; repeatable; replaces existing creator list
-  -meta-json <file>     apply metadata patch from a JSON file
+  -meta <file>          apply metadata patch from a JSON file
                         (format: {"title":"...", "language":"...", "creators":["..."]})
   -dump-meta <file>     export current metadata snapshot as JSON to <file>
-  -dump-nav <file>      export current nav document (XHTML) to <file>
   -nav <file>           replace the entire nav document from an XHTML file
-  -out <path>           write result to a new file instead of editing in place
+  -dump-nav <file>      export current nav document (XHTML) to <file>
+  -o, -out <path>       write result to a new file instead of editing in place
   -no-touch-modified    don't update the last-modified timestamp (dcterms:modified)
 
-  CLI flags override values from -meta-json when both are given.
+  CLI flags override values from -meta when both are given.
 `
 
 const usageRewrite = `Rewrite:
@@ -109,14 +109,14 @@ const usageRewrite = `Rewrite:
   -find <str>           literal string to search for (see -regex)
   -replace <str>        replacement text (default: empty string, i.e. delete matches)
   -regex                treat -find as a Go regular expression
-  -case-sensitive       make matching case-sensitive (default: case-insensitive)
+  -i, -ignore-case      make matching case-insensitive (default: case-sensitive)
   -scope <s>            body, meta, or all — limit where rewrites apply (default: body)
   -selector <sel>       CSS-like selector to target elements (e.g. p, .note, p.chapter);
                         repeatable; applies to the -find/-replace rule
   -rules <file>         JSON file with an array of rule objects, each with:
-                        find, replace, regex, case_sensitive, selectors
+                        find, replace, regex, ignore_case, selectors
   -dry-run              report match counts without writing any changes
-  -out <path>           write result to a new file instead of editing in place
+  -o, -out <path>       write result to a new file instead of editing in place
 `
 
 const usageExamples = `Examples:
@@ -304,10 +304,12 @@ func runRewrite(ctx context.Context, args []string) error {
 	fs.Usage = func() { fmt.Fprint(os.Stderr, usageRewrite) }
 
 	out := fs.String("out", "", "")
+	fs.StringVar(out, "o", "", "")
 	find := fs.String("find", "", "")
 	replace := fs.String("replace", "", "")
 	regex := fs.Bool("regex", false, "")
-	caseSensitive := fs.Bool("case-sensitive", false, "")
+	ignoreCase := fs.Bool("ignore-case", false, "")
+	fs.BoolVar(ignoreCase, "i", false, "")
 	scopeStr := fs.String("scope", "body", "")
 
 	var selectors multiValue
@@ -336,11 +338,11 @@ func runRewrite(ctx context.Context, args []string) error {
 
 	if *find != "" {
 		rules = append(rules, epub.RewriteRule{
-			Find:          *find,
-			Replace:       *replace,
-			Regex:         *regex,
-			CaseSensitive: *caseSensitive,
-			Selectors:     selectors,
+			Find:       *find,
+			Replace:    *replace,
+			Regex:      *regex,
+			IgnoreCase: *ignoreCase,
+			Selectors:  selectors,
 		})
 	}
 
@@ -376,6 +378,7 @@ func runEditMeta(ctx context.Context, args []string) error {
 	fs.Usage = func() { fmt.Fprint(os.Stderr, usageEditMeta) }
 
 	out := fs.String("out", "", "")
+	fs.StringVar(out, "o", "", "")
 	title := fs.String("title", "", "")
 	lang := fs.String("lang", "", "")
 	identifier := fs.String("identifier", "", "")
@@ -384,10 +387,10 @@ func runEditMeta(ctx context.Context, args []string) error {
 	var creators multiValue
 	fs.Var(&creators, "creator", "")
 
-	metaJSONPath := fs.String("meta-json", "", "")
+	metaPath := fs.String("meta", "", "")
 	dumpMeta := fs.String("dump-meta", "", "")
+	navPath := fs.String("nav", "", "")
 	dumpNav := fs.String("dump-nav", "", "")
-	navReplace := fs.String("nav", "", "")
 	noTouch := fs.Bool("no-touch-modified", false, "")
 
 	if err := fs.Parse(args); err != nil {
@@ -401,13 +404,13 @@ func runEditMeta(ctx context.Context, args []string) error {
 	input := fs.Arg(0)
 
 	var patch epub.MetadataPatch
-	if *metaJSONPath != "" {
-		data, err := os.ReadFile(*metaJSONPath)
+	if *metaPath != "" {
+		data, err := os.ReadFile(*metaPath)
 		if err != nil {
-			return fmt.Errorf("read meta-json: %w", err)
+			return fmt.Errorf("read meta: %w", err)
 		}
 		if err := json.Unmarshal(data, &patch); err != nil {
-			return fmt.Errorf("parse meta-json: %w", err)
+			return fmt.Errorf("parse meta: %w", err)
 		}
 	}
 
@@ -436,7 +439,7 @@ func runEditMeta(ctx context.Context, args []string) error {
 
 	opts := epub.EditOptions{
 		OutPath:        *out,
-		NavReplacePath: *navReplace,
+		NavReplacePath: *navPath,
 		DumpNavPath:    *dumpNav,
 		DumpMetaPath:   *dumpMeta,
 		MetadataPatch:  patch,
