@@ -50,65 +50,6 @@ func main() {
 	}
 }
 
-func runMerge(ctx context.Context, args []string) error {
-	fs := flag.NewFlagSet("merge", flag.ContinueOnError)
-	fs.SetOutput(os.Stderr)
-	fs.Usage = func() { fmt.Fprint(os.Stderr, usageMerge) }
-
-	out := fs.String("out", "merged.epub", "")
-	fs.StringVar(out, "o", "merged.epub", "")
-
-	title := fs.String("title", "", "")
-	fs.StringVar(title, "t", "", "")
-
-	lang := fs.String("lang", "", "")
-
-	var creatorVals multiValue
-	fs.Var(&creatorVals, "creator", "")
-	fs.Var(&creatorVals, "c", "")
-
-	var listFiles multiValue
-	fs.Var(&listFiles, "list", "")
-
-	var dirInputs multiValue
-	fs.Var(&dirInputs, "dir", "")
-
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
-
-	files := fs.Args()
-
-	if len(listFiles) > 0 {
-		fromLists, err := expandListFiles(listFiles)
-		if err != nil {
-			return err
-		}
-		files = append(files, fromLists...)
-	}
-
-	if len(dirInputs) > 0 {
-		fromDirs, err := expandDirectories(dirInputs)
-		if err != nil {
-			return err
-		}
-		files = append(files, fromDirs...)
-	}
-
-	if len(files) < 2 {
-		return fmt.Errorf("need at least two EPUB files to merge")
-	}
-
-	opts := epub.MergeOptions{
-		Title:    *title,
-		Language: *lang,
-		Creators: creatorVals,
-		OutPath:  *out,
-	}
-
-	return epub.MergeEPUBs(ctx, files, opts)
-}
-
 const usageHeader = `novfmt — lightweight CLI for EPUB maintenance
 
 Usage:
@@ -296,6 +237,65 @@ func extractVolumeNumber(name string) (int, bool) {
 		return 0, false
 	}
 	return num, true
+}
+
+func runMerge(ctx context.Context, args []string) error {
+	fs := flag.NewFlagSet("merge", flag.ContinueOnError)
+	fs.SetOutput(os.Stderr)
+	fs.Usage = func() { fmt.Fprint(os.Stderr, usageMerge) }
+
+	out := fs.String("out", "merged.epub", "")
+	fs.StringVar(out, "o", "merged.epub", "")
+
+	title := fs.String("title", "", "")
+	fs.StringVar(title, "t", "", "")
+
+	lang := fs.String("lang", "", "")
+
+	var creatorVals multiValue
+	fs.Var(&creatorVals, "creator", "")
+	fs.Var(&creatorVals, "c", "")
+
+	var listFiles multiValue
+	fs.Var(&listFiles, "list", "")
+
+	var dirInputs multiValue
+	fs.Var(&dirInputs, "dir", "")
+
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	files := fs.Args()
+
+	if len(listFiles) > 0 {
+		fromLists, err := expandListFiles(listFiles)
+		if err != nil {
+			return err
+		}
+		files = append(files, fromLists...)
+	}
+
+	if len(dirInputs) > 0 {
+		fromDirs, err := expandDirectories(dirInputs)
+		if err != nil {
+			return err
+		}
+		files = append(files, fromDirs...)
+	}
+
+	if len(files) < 2 {
+		return fmt.Errorf("need at least two EPUB files to merge")
+	}
+
+	opts := epub.MergeOptions{
+		Title:    *title,
+		Language: *lang,
+		Creators: creatorVals,
+		OutPath:  *out,
+	}
+
+	return epub.MergeEPUBs(ctx, files, opts)
 }
 
 func runRewrite(ctx context.Context, args []string) error {
